@@ -491,6 +491,11 @@ public final class Axis1Client implements WSClient {
 		//print.e("MAP");
 		//print.e(type.getQName());
 		
+		TypeEntry ref = type.getRefType();
+		if(ref!=null && ref!=type) {
+			map(pc, symbolTable, secondChanceConfig, tm, ref);
+		}
+		
 		// Simple Type
 		if(type.getContainedElements()==null) return null;
 
