@@ -32,7 +32,7 @@
  * limitations under the License.
  */
 
-package org.apache.axis.encoding.ser;
+package org.lucee.extension.axis.ser;
 
 import java.io.IOException;
 import java.util.Map;
@@ -43,6 +43,9 @@ import lucee.loader.engine.CFMLEngineFactory;
 
 import org.apache.axis.description.TypeDesc;
 import org.apache.axis.encoding.Deserializer;
+import org.apache.axis.encoding.ser.BaseDeserializerFactory;
+import org.apache.axis.encoding.ser.BeanDeserializer;
+import org.apache.axis.encoding.ser.EnumDeserializer;
 import org.apache.axis.utils.BeanPropertyDescriptor;
 import org.apache.axis.utils.BeanUtils;
 import org.apache.axis.utils.JavaUtils;
