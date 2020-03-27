@@ -16,18 +16,17 @@ import lucee.runtime.type.Collection;
 public class WebserviceCacheItem implements CacheItem, Serializable, Dumpable {
 
 	private static final long serialVersionUID = -8462614105941179140L;
-	
+
 	private Object data;
 	private String url;
 	private String methodName;
 	private long executionTimeNS;
 
-
 	public WebserviceCacheItem(Object data, String url, String methodName, long executionTimeNS) {
 		this.data = data;
-		this.url=url;
-		this.methodName=methodName;
-		this.executionTimeNS=executionTimeNS;
+		this.url = url;
+		this.methodName = methodName;
+		this.executionTimeNS = executionTimeNS;
 	}
 
 	@Override
@@ -36,7 +35,7 @@ public class WebserviceCacheItem implements CacheItem, Serializable, Dumpable {
 		table.setTitle("WebserviceCacheEntry");
 		table.appendRow(1, new SimpleDumpData("URL"), new SimpleDumpData(url));
 		table.appendRow(1, new SimpleDumpData("Method Name"), new SimpleDumpData(methodName));
-		
+
 		return table;
 	}
 
@@ -56,12 +55,12 @@ public class WebserviceCacheItem implements CacheItem, Serializable, Dumpable {
 
 	@Override
 	public String getName() {
-		return url+"&method="+methodName;
+		return url + "&method=" + methodName;
 	}
 
 	@Override
 	public long getPayload() {
-		return data instanceof Collection?((Collection)data).size():1;
+		return data instanceof Collection ? ((Collection) data).size() : 1;
 	}
 
 	@Override

@@ -18,12 +18,11 @@ public class StringUtil {
 
 	public static final char CACHE_DEL = ';';
 	public static final char CACHE_DEL2 = ':';
-	
 
 	public static String create64BitHashAsString(CharSequence cs) {
 		return Long.toString(create64BitHash(cs), Character.MAX_RADIX);
 	}
-	
+
 	public static long create64BitHash(CharSequence cs) {
 		long h = HSTART;
 		final long hmult = HMULT;
@@ -34,11 +33,10 @@ public class StringUtil {
 			h = (h * hmult) ^ ht[ch & 0xff];
 			h = (h * hmult) ^ ht[(ch >>> 8) & 0xff];
 		}
-		if(h<0)
-			return 0-h;
+		if (h < 0) return 0 - h;
 		return h;
 	}
-	
+
 	private static final long[] createLookupTable() {
 		long[] _byteTable = new long[256];
 		long h = 0x544B2FBACAAF1684L;
@@ -52,13 +50,12 @@ public class StringUtil {
 		}
 		return _byteTable;
 	}
-	
 
 	public static String[] keysAsString(Collection coll) {
-		if(coll==null) return new String[0];
+		if (coll == null) return new String[0];
 		Iterator<Key> it = coll.keyIterator();
-		List<String> rtn=new ArrayList<String>();
-		if(it!=null)while(it.hasNext()){
+		List<String> rtn = new ArrayList<String>();
+		if (it != null) while (it.hasNext()) {
 			rtn.add(it.next().getString());
 		}
 		return rtn.toArray(new String[rtn.size()]);

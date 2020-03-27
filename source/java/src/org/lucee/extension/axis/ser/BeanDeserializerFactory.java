@@ -58,65 +58,64 @@ import org.apache.axis.utils.JavaUtils;
  */
 public class BeanDeserializerFactory extends BaseDeserializerFactory {
 
-    /** Type metadata about this class for XML deserialization */
-    protected transient TypeDesc typeDesc = null;
-    protected transient Map propertyMap = null;
+	/** Type metadata about this class for XML deserialization */
+	protected transient TypeDesc typeDesc = null;
+	protected transient Map propertyMap = null;
 
-    public BeanDeserializerFactory(Class javaType, QName xmlType) {
-        super(BeanDeserializer.class, xmlType, javaType);
-        
-        // Sometimes an Enumeration class is registered as a Bean.
-        // If this is the case, silently switch to the EnumDeserializer
-        if (JavaUtils.isEnumClass(javaType)) {
-            deserClass = EnumDeserializer.class;
-        }
+	public BeanDeserializerFactory(Class javaType, QName xmlType) {
+		super(BeanDeserializer.class, xmlType, javaType);
 
-        typeDesc = TypeDesc.getTypeDescForClass(javaType);
-        propertyMap = getProperties(javaType, typeDesc);
-    }
+		// Sometimes an Enumeration class is registered as a Bean.
+		// If this is the case, silently switch to the EnumDeserializer
+		if (JavaUtils.isEnumClass(javaType)) {
+			deserClass = EnumDeserializer.class;
+		}
 
-   /**
-     * Get a list of the bean properties
-     */
-    public static Map getProperties(Class javaType, TypeDesc typeDesc ) {
-        Map propertyMap = null;
+		typeDesc = TypeDesc.getTypeDescForClass(javaType);
+		propertyMap = getProperties(javaType, typeDesc);
+	}
 
-        if (typeDesc != null) {
-            propertyMap = typeDesc.getPropertyDescriptorMap();
-        } else {
-            BeanPropertyDescriptor[] pd = BeanUtils.getPd(javaType, null);
-            propertyMap = CFMLEngineFactory.getInstance().getCreationUtil().createStruct();// use this to get rid of case sensitivity
-            
-            // loop through properties and grab the names for later
-            for (int i = 0; i < pd.length; i++) {
-                BeanPropertyDescriptor descriptor = pd[i];
-                propertyMap.put(descriptor.getName(), descriptor);
-            }
-        }
+	/**
+	 * Get a list of the bean properties
+	 */
+	public static Map getProperties(Class javaType, TypeDesc typeDesc) {
+		Map propertyMap = null;
 
-        return propertyMap;
-    }
+		if (typeDesc != null) {
+			propertyMap = typeDesc.getPropertyDescriptorMap();
+		}
+		else {
+			BeanPropertyDescriptor[] pd = BeanUtils.getPd(javaType, null);
+			propertyMap = CFMLEngineFactory.getInstance().getCreationUtil().createStruct();// use this to get rid of case sensitivity
 
-   /**
-     * Optimize construction of a BeanDeserializer by caching the
-     * type descriptor and property map.
-     */
-    @Override
+			// loop through properties and grab the names for later
+			for (int i = 0; i < pd.length; i++) {
+				BeanPropertyDescriptor descriptor = pd[i];
+				propertyMap.put(descriptor.getName(), descriptor);
+			}
+		}
+
+		return propertyMap;
+	}
+
+	/**
+	 * Optimize construction of a BeanDeserializer by caching the type descriptor and property map.
+	 */
+	@Override
 	protected Deserializer getGeneralPurpose(String mechanismType) {
-        if (javaType == null || xmlType == null) {
-           return super.getGeneralPurpose(mechanismType);
-        }
+		if (javaType == null || xmlType == null) {
+			return super.getGeneralPurpose(mechanismType);
+		}
 
-        if (deserClass == EnumDeserializer.class) {
-           return super.getGeneralPurpose(mechanismType);
-        }
-        return new BeanDeserializer(javaType, xmlType, typeDesc, propertyMap);
-    }
+		if (deserClass == EnumDeserializer.class) {
+			return super.getGeneralPurpose(mechanismType);
+		}
+		return new BeanDeserializer(javaType, xmlType, typeDesc, propertyMap);
+	}
 
-
-    private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException {
-        in.defaultReadObject();
-        typeDesc = TypeDesc.getTypeDescForClass(javaType);
-        propertyMap = getProperties(javaType, typeDesc);
-    }
+	private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException {
+		in.defaultReadObject();
+		typeDesc = TypeDesc.getTypeDescForClass(javaType);
+		propertyMap = getProperties(javaType, typeDesc);
+	}
 }

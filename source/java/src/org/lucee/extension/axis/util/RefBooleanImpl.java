@@ -10,8 +10,7 @@ public final class RefBooleanImpl implements RefBoolean {// MUST add interface
 
 	private boolean value;
 
-	public RefBooleanImpl() {
-	}
+	public RefBooleanImpl() {}
 
 	/**
 	 * @param value

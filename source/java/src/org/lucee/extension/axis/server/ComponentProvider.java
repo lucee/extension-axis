@@ -30,30 +30,28 @@ import org.lucee.extension.axis.Axis1Caster;
 import org.apache.axis.MessageContext;
 import org.apache.axis.providers.java.RPCProvider;
 
- final class ComponentProvider extends RPCProvider {
+final class ComponentProvider extends RPCProvider {
 
 	public static final String PAGE_CONTEXT = PageContext.class.getName();
 	public static final String COMPONENT = Component.class.getName();
-	
-	
+
 	@Override
 	protected Object invokeMethod(MessageContext mc, Method method, Object trg, Object[] args) throws Exception {
-		PageContext pc=(PageContext) mc.getProperty(Constants.PAGE_CONTEXT);
-		Component c= (Component) mc.getProperty(Constants.COMPONENT);
-// MMMUST is this class still used; revert //////////
-		Axis1Server server = null;//////////Axis1Server.getInstance(pc);
-		TypeMapping tm =mc.getTypeMapping();//TypeMappingUtil.getServerTypeMapping(server.getEngine().getTypeMappingRegistry());
-		
+		PageContext pc = (PageContext) mc.getProperty(Constants.PAGE_CONTEXT);
+		Component c = (Component) mc.getProperty(Constants.COMPONENT);
+		// MMMUST is this class still used; revert //////////
+		Axis1Server server = null;////////// Axis1Server.getInstance(pc);
+		TypeMapping tm = mc.getTypeMapping();// TypeMappingUtil.getServerTypeMapping(server.getEngine().getTypeMappingRegistry());
+
 		return null;//////////////// AxisCaster.toAxisType(tm,c.call(pc,method.getName(),toLuceeType(pc,args)),null);
 	}
 
-	private Object[] toLuceeType(PageContext pc,Object[] args) throws PageException {
-		Object[] trgs=new Object[args.length];
-		for(int i=0;i<trgs.length;i++) {
-			trgs[i]=Axis1Caster.toLuceeType(pc,args[i]);
+	private Object[] toLuceeType(PageContext pc, Object[] args) throws PageException {
+		Object[] trgs = new Object[args.length];
+		for (int i = 0; i < trgs.length; i++) {
+			trgs[i] = Axis1Caster.toLuceeType(pc, args[i]);
 		}
 		return trgs;
 	}
-	
 
 }

@@ -3,15 +3,15 @@ package org.lucee.extension.axis.util;
 import java.io.Serializable;
 
 /**
-* a Simple name value Pair
-*/
-public final class Pair<K,V> implements Serializable {
+ * a Simple name value Pair
+ */
+public final class Pair<K, V> implements Serializable {
 	K name;
 	V value;
 
-
 	/**
 	 * Constructor of the class
+	 * 
 	 * @param name
 	 * @param value
 	 */
@@ -19,7 +19,7 @@ public final class Pair<K,V> implements Serializable {
 		this.name = name;
 		this.value = value;
 	}
-	
+
 	/**
 	 * @return the name
 	 */
@@ -36,7 +36,7 @@ public final class Pair<K,V> implements Serializable {
 
 	@Override
 	public String toString() {
-		return name+":"+value;
+		return name + ":" + value;
 	}
 
 	/**

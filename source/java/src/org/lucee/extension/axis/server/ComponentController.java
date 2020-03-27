@@ -42,17 +42,17 @@ import lucee.runtime.util.Excepton;
 import org.apache.axis.AxisFault;
 import org.apache.axis.MessageContext;
 
- final class ComponentController {
+final class ComponentController {
 
 	private static ThreadLocal<Component> component = new ThreadLocal<Component>();
 	private static ThreadLocal<PageContext> pagecontext = new ThreadLocal<PageContext>();
 	private static ThreadLocal<MessageContext> messageContext = new ThreadLocal<MessageContext>();
 	private static Cast caster;
 	private static Excepton exp;
-	
+
 	static {
 		CFMLEngine engine = CFMLEngineFactory.getInstance();
-		caster=engine.getCastUtil();
+		caster = engine.getCastUtil();
 		exp = engine.getExceptionUtil();
 	}
 
@@ -67,35 +67,30 @@ import org.apache.axis.MessageContext;
 	 */
 	public static Object invoke(Axis1Server server, String name, Object[] args) throws AxisFault {
 		try {
-			return _invoke(server,name, args);
-		} catch (Exception e) {
+			return _invoke(server, name, args);
+		}
+		catch (Exception e) {
 			throw AxisFault.makeFault((caster.toPageException(e)));
 		}
 	}
 
-	public static Object _invoke(Axis1Server server, String name, Object[] args)
-			throws PageException {
+	public static Object _invoke(Axis1Server server, String name, Object[] args) throws PageException {
 		Key key = caster.toKey(name);
 		Component c = component.get();
 		PageContext p = pagecontext.get();
 		MessageContext mc = messageContext.get();
-		if (c == null)
-			throw exp.createApplicationException("missing component");
-		if (p == null)
-			throw exp.createApplicationException("missing pagecontext");
-		Object o=c.get(p, key, null);
-		UDF udf = o instanceof UDF?(UDF)o:null;
+		if (c == null) throw exp.createApplicationException("missing component");
+		if (p == null) throw exp.createApplicationException("missing pagecontext");
+		Object o = c.get(p, key, null);
+		UDF udf = o instanceof UDF ? (UDF) o : null;
 		FunctionArgument[] fa = null;
-		if (udf != null)
-			fa = udf.getFunctionArguments();
+		if (udf != null) fa = udf.getFunctionArguments();
 
 		for (int i = 0; i < args.length; i++) {
-			if (fa != null && i < fa.length
-					&& fa[i].getType() == -1/*CFTypes.TYPE_UNKNOW*/) {
-				args[i] = Axis1Caster.toLuceeType(p, fa[i].getTypeAsString(),
-						args[i]);
-			} else
-				args[i] = Axis1Caster.toLuceeType(p, args[i]);
+			if (fa != null && i < fa.length && fa[i].getType() == -1/* CFTypes.TYPE_UNKNOW */) {
+				args[i] = Axis1Caster.toLuceeType(p, fa[i].getTypeAsString(), args[i]);
+			}
+			else args[i] = Axis1Caster.toLuceeType(p, args[i]);
 		}
 
 		// return type
@@ -105,22 +100,19 @@ import org.apache.axis.MessageContext;
 
 		// cast return value to Axis type
 		try {
-			//WSServer server = WSHandler.getInstance().getWSServer(p);
-			TypeMapping tm = mc != null ? mc.getTypeMapping() : TypeMappingUtil
-					.getServerTypeMapping(((Axis1Server)server).getEngine()
-							.getTypeMappingRegistry());
+			// WSServer server = WSHandler.getInstance().getWSServer(p);
+			TypeMapping tm = mc != null ? mc.getTypeMapping() : TypeMappingUtil.getServerTypeMapping(((Axis1Server) server).getEngine().getTypeMappingRegistry());
 			rtn = caster.castTo(p, rtnType, rtn, false);
 			Class<?> clazz = ClassUtil.cfTypeToClass(rtnType);
-			return Axis1Caster.toAxisType((Axis1Handler) server.getWSHandler(),tm, rtn,
-					clazz.getComponentType() != null ? clazz : null);
-		} catch (Exception e) {
+			return Axis1Caster.toAxisType((Axis1Handler) server.getWSHandler(), tm, rtn, clazz.getComponentType() != null ? clazz : null);
+		}
+		catch (Exception e) {
 			throw caster.toPageException(e);
 		}
 	}
 
 	/**
-	 * removes PageContext and Component sets component and pageContext to
-	 * invoke
+	 * removes PageContext and Component sets component and pageContext to invoke
 	 * 
 	 * @param p
 	 * @param c

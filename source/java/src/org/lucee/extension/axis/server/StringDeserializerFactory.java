@@ -27,13 +27,13 @@ public class StringDeserializerFactory extends SimpleDeserializerFactory {
 	public StringDeserializerFactory(Class javaType, QName xmlType) {
 		super(javaType, xmlType);
 	}
-	
+
 	@Override
 	public Deserializer getDeserializerAs(String mechanismType) {
 		if (javaType == String.class) {
 			return new StringDeserializer(javaType, xmlType);
 		}
-		
+
 		return super.getDeserializerAs(mechanismType);
 	}
 }

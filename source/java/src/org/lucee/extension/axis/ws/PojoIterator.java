@@ -10,28 +10,28 @@ import lucee.loader.engine.CFMLEngine;
 import lucee.loader.engine.CFMLEngineFactory;
 import lucee.runtime.type.Collection;
 
-public class PojoIterator implements Iterator<Pair<Collection.Key,Object>> {
-	
-	private static final Object[] EMPTY_ARG = new Object[]{}; 
-	
+public class PojoIterator implements Iterator<Pair<Collection.Key, Object>> {
+
+	private static final Object[] EMPTY_ARG = new Object[] {};
+
 	private Object pojo;
 	private Method[] getters;
 	private Class<? extends Object> clazz;
-	private int index=-1;
+	private int index = -1;
 
 	public PojoIterator(Object pojo) {
-		this.pojo=pojo;
-		this.clazz=pojo.getClass();
+		this.pojo = pojo;
+		this.clazz = pojo.getClass();
 		getters = Reflector.getGetters(pojo.getClass());
 	}
-	
+
 	public int size() {
 		return getters.length;
 	}
 
 	@Override
 	public boolean hasNext() {
-		return (index+1)<getters.length;
+		return (index + 1) < getters.length;
 	}
 
 	@Override
@@ -39,10 +39,10 @@ public class PojoIterator implements Iterator<Pair<Collection.Key,Object>> {
 		Method g = getters[++index];
 		CFMLEngine en = CFMLEngineFactory.getInstance();
 		try {
-			
+
 			return new Pair<Collection.Key, Object>(en.getCreationUtil().createKey(g.getName().substring(3)), g.invoke(pojo, EMPTY_ARG));
 		}
-		catch(Exception e) {
+		catch (Exception e) {
 			throw en.getExceptionUtil().createPageRuntimeException(en.getCastUtil().toPageException(e));
 		}
 	}

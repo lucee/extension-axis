@@ -14,13 +14,14 @@ public class ObjectsIterator implements Iterator<Object> {
 	private CFMLEngine engine;
 
 	public ObjectsIterator(Key[] keys, Objects objs) {
-		this.keys=new KeyIterator(keys);
-		this.objs=objs;
-		this.engine=CFMLEngineFactory.getInstance();
+		this.keys = new KeyIterator(keys);
+		this.objs = objs;
+		this.engine = CFMLEngineFactory.getInstance();
 	}
+
 	public ObjectsIterator(Iterator<Key> keys, Objects objs) {
-		this.keys=keys;
-		this.objs=objs;
+		this.keys = keys;
+		this.objs = objs;
 	}
 
 	@Override
@@ -30,7 +31,7 @@ public class ObjectsIterator implements Iterator<Object> {
 
 	@Override
 	public Object next() {
-		return objs.get(engine.getThreadPageContext(),engine.getCastUtil().toKey(keys.next(),null),null);
+		return objs.get(engine.getThreadPageContext(), engine.getCastUtil().toKey(keys.next(), null), null);
 	}
 
 	@Override

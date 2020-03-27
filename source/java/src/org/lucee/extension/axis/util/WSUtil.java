@@ -22,33 +22,32 @@ public class WSUtil {
 		Iterator it;
 		Iterator<Port> itr = ports.values().iterator();
 		Object v;
-		while(itr.hasNext()) {
+		while (itr.hasNext()) {
 			port = itr.next();
-			
-			list=port.getExtensibilityElements();
-			if(list != null) {
+
+			list = port.getExtensibilityElements();
+			if (list != null) {
 				it = list.iterator();
-				while(it.hasNext()) {
-					v=it.next();
-					if(v instanceof SOAPAddress) {
+				while (it.hasNext()) {
+					v = it.next();
+					if (v instanceof SOAPAddress) {
 						return port;
 					}
 				}
 
 			}
 		}
-		throw CFMLEngineFactory.getInstance().getExceptionUtil().createExpressionException
-		("Can't locate port entry for service " + service.getQName().toString() + " WSDL");
+		throw CFMLEngineFactory.getInstance().getExceptionUtil().createExpressionException("Can't locate port entry for service " + service.getQName().toString() + " WSDL");
 	}
 
 	public static Message getMessageByLocalName(Map<QName, Message> messages, String name) {
-		Iterator<Entry<QName,Message>> it = messages.entrySet().iterator();
-		Entry<QName,Message> e;
-		while(it.hasNext()){
-       	e = it.next();
-       	//print.e(e.getKey().getLocalPart()+":"+name);
-       	if(e.getKey().getLocalPart().equals(name)) return e.getValue();
-       }
-       return null;
+		Iterator<Entry<QName, Message>> it = messages.entrySet().iterator();
+		Entry<QName, Message> e;
+		while (it.hasNext()) {
+			e = it.next();
+			// print.e(e.getKey().getLocalPart()+":"+name);
+			if (e.getKey().getLocalPart().equals(name)) return e.getValue();
+		}
+		return null;
 	}
 }
