@@ -791,7 +791,8 @@ public final class Axis1Caster {
 
 	public static Object toLuceeType(PageContext pc, String customType, Object value) throws PageException {
 		if (pc == null) pc = engine.getThreadPageContext();
-		if (pc != null && value != null && engine.getClassUtil().isInstaneOf(value.getClass(), POJO_CLASS)) {
+		// ich check for array, because isInstaneOf also accepts arrays of that type
+		if (pc != null && value != null && !decision.isArray(value) && engine.getClassUtil().isInstaneOf(value.getClass(), POJO_CLASS)) {
 			if (!Util.isEmpty(customType)) {
 				Component cfc = ClassUtil.toComponent(pc, value, customType, null);
 				if (cfc != null) return cfc;
