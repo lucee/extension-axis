@@ -1,26 +1,17 @@
 package org.lucee.extension.axis.util;
 
-import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.dom.DOMResult;
-import javax.xml.transform.sax.SAXSource;
-
-import lucee.loader.engine.CFMLEngineFactory;
-import lucee.runtime.exp.PageException;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
-import org.xml.sax.EntityResolver;
 import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
-import org.xml.sax.XMLReader;
+
+import lucee.loader.engine.CFMLEngineFactory;
+import lucee.runtime.exp.PageException;
 
 public class XMLUtil {
 
@@ -58,7 +49,8 @@ public class XMLUtil {
 					if (filter == null || filter.equals(n.getLocalName())) rtn.add(n);
 				}
 			}
-			catch (Exception t) {}
+			catch (Exception t) {
+			}
 		}
 		return rtn;
 	}

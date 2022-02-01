@@ -58,13 +58,12 @@ import org.apache.axis.transport.http.HTTPConstants;
 import org.apache.axis.transport.http.QSWSDLHandler;
 import org.apache.axis.transport.http.ServletEndpointContextImpl;
 import org.apache.axis.utils.Messages;
-import org.apache.commons.logging.impl.Log4JLogger;
 import org.lucee.extension.axis.Axis1Caster;
 import org.lucee.extension.axis.Axis1Handler;
 import org.lucee.extension.axis.TypeMappingUtil;
 import org.lucee.extension.axis.WSHandler;
 import org.lucee.extension.axis.WSServer;
-import org.lucee.extension.axis.util.ClassUtil;
+import org.lucee.extension.axis.log.LogImpl;
 import org.lucee.extension.axis.util.HTTPUtil;
 import org.w3c.dom.Element;
 
@@ -143,13 +142,8 @@ public final class Axis1Server implements WSServer {
 		return server;
 	}
 
-	private Log4JLogger toLog(Log logger) {
-		try {
-			return new Log4JLogger(ClassUtil.getLogger(logger));
-		}
-		catch (PageException pe) {
-			return null;
-		}
+	private org.apache.commons.logging.Log toLog(Log logger) {
+		return new LogImpl(logger);
 	}
 
 	@Override
@@ -417,7 +411,8 @@ public final class Axis1Server implements WSServer {
 				try {
 					responseMsg.setProperty(SOAPMessage.CHARACTER_SET_ENCODING, responseEncoding);
 				}
-				catch (SOAPException e) {}
+				catch (SOAPException e) {
+				}
 			}
 			// determine content type from message response
 			contentType = responseMsg.getContentType(msgContext.getSOAPConstants());

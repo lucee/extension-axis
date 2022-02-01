@@ -3,12 +3,11 @@ package org.lucee.extension.axis.util;
 import java.io.IOException;
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Iterator;
 import java.util.List;
 
-import org.apache.log4j.Logger;
+import org.lucee.extension.axis.log.LogImpl;
 
 import lucee.commons.io.log.Log;
 import lucee.loader.engine.CFMLEngine;
@@ -201,15 +200,8 @@ public class ClassUtil {
 		}
 	}
 
-	public static Logger getLogger(Log logger) throws PageException { // this method is from interface LogAdapter
-		try {
-			Method m = logger.getClass().getMethod("getLogger", new Class[0]);
-			return (Logger) m.invoke(logger, new Object[0]);
-
-		}
-		catch (Exception e) {
-			throw caster.toPageException(e);
-		}
+	public static org.apache.commons.logging.Log getLogger(Log logger) throws PageException { // this method is from interface LogAdapter
+		return new LogImpl(logger);
 	}
 
 	public static Class cfTypeToClass(String type) throws PageException {
