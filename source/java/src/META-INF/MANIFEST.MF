@@ -1,7 +1,7 @@
 Manifest-Version: 1.0
 Export-Package: org.lucee.extension.axis,org.lucee.extension.axis.client,org.lucee.extension.axis.server
 Import-Package: org.apache.axis,org.apache.commons.logging.impl
-Require-Bundle: org.lucee.axis;bundle-version=1.4.0.0005L,
+Require-Bundle: org.lucee.axis;bundle-version=1.4.0.0006L,
  org.lucee.axis.ant;bundle-version=1.4.0.0005L,
  org.apache.commons.discovery;bundle-version=0.5,
  org.lucee.commons.httpclient;bundle-version=3.1.0.0002L,
