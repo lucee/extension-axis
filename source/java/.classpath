@@ -12,9 +12,9 @@
 	</classpathentry>
 	<classpathentry kind="lib" path="libs/lucee.jar"/>
 	<classpathentry kind="lib" path="libs/org.lucee.wsdl4j-1.5.1.00002L.jar"/>
-	<classpathentry kind="lib" path="libs/org.lucee.axis.ant-1.4.0.0005L.jar"/>
-	<classpathentry kind="lib" path="libs/org.lucee.axis-1.4.0.0005L.jar"/>
 	<classpathentry kind="lib" path="libs/org.lucee.commons.httpclient-3.1.0.0002L.jar"/>
 	<classpathentry kind="lib" path="libs/org.lucee.commons.logging-1.2.0.0000L.jar"/>
+	<classpathentry kind="lib" path="libs/org.lucee.axis.ant-1.4.0.0006L.jar"/>
+	<classpathentry kind="lib" path="libs/org.lucee.axis-1.4.0.0006L.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
