@@ -10,7 +10,7 @@ jobs:
 
     runs-on: ubuntu-latest
     env:
-      luceeVersion: light-6.2.0.321
+      luceeVersion: light-6.2.1.122
 
     steps:
     - uses: actions/checkout@v4
@@ -53,3 +53,14 @@ jobs:
       env:
         testLabels: axis,webservice
         testAdditional: ${{ github.workspace }}/tests
+    - name: Run Lucee Test Suite (testLabels="axis,webservice") NO BUNDLE DOWNLOAD
+      uses: lucee/script-runner@main
+      with:
+        webroot: ${{ github.workspace }}/lucee/test
+        execute: /bootstrap-tests.cfm
+        luceeVersion: ${{ env.luceeVersion }}
+        extensionDir: ${{ github.workspace }}/dist
+      env:
+        testLabels: axis,webservice
+        testAdditional: ${{ github.workspace }}/tests
+        LUCEE_ENABLE_BUNDLE_DOWNLOAD: false
