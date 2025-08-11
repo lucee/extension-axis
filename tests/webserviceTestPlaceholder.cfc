@@ -1,4 +1,4 @@
-component extends="org.lucee.cfml.test.LuceeTestCase" labels="axis,webservice" {
+component extends="org.lucee.cfml.test.LuceeTestCase" labels="axis" {
     /*
 
     the lucee test suite runs without a http server, so the axis,webservice stuff can't be unit tested
