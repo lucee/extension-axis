@@ -20,27 +20,23 @@ package org.lucee.extension.axis.server;
 
 import javax.xml.rpc.encoding.TypeMapping;
 
+import org.apache.axis.AxisFault;
+import org.apache.axis.MessageContext;
+import org.lucee.extension.axis.Axis1Caster;
+import org.lucee.extension.axis.Axis1Handler;
+import org.lucee.extension.axis.TypeMappingUtil;
+import org.lucee.extension.axis.util.ClassUtil;
+
 import lucee.loader.engine.CFMLEngine;
 import lucee.loader.engine.CFMLEngineFactory;
 import lucee.runtime.Component;
 import lucee.runtime.PageContext;
 import lucee.runtime.exp.PageException;
-
-import org.lucee.extension.axis.Axis1Caster;
-import org.lucee.extension.axis.Axis1Handler;
-import org.lucee.extension.axis.TypeMappingUtil;
-import org.lucee.extension.axis.WSHandler;
-import org.lucee.extension.axis.WSServer;
-import org.lucee.extension.axis.util.ClassUtil;
-
 import lucee.runtime.type.Collection.Key;
 import lucee.runtime.type.FunctionArgument;
 import lucee.runtime.type.UDF;
 import lucee.runtime.util.Cast;
 import lucee.runtime.util.Excepton;
-
-import org.apache.axis.AxisFault;
-import org.apache.axis.MessageContext;
 
 final class ComponentController {
 
@@ -101,7 +97,7 @@ final class ComponentController {
 		// cast return value to Axis type
 		try {
 			// WSServer server = WSHandler.getInstance().getWSServer(p);
-			TypeMapping tm = mc != null ? mc.getTypeMapping() : TypeMappingUtil.getServerTypeMapping(((Axis1Server) server).getEngine().getTypeMappingRegistry());
+			TypeMapping tm = mc != null ? mc.getTypeMapping() : TypeMappingUtil.getServerTypeMapping(server.getEngine(null).getTypeMappingRegistry());
 			rtn = caster.castTo(p, rtnType, rtn, false);
 			Class<?> clazz = ClassUtil.cfTypeToClass(rtnType);
 			return Axis1Caster.toAxisType((Axis1Handler) server.getWSHandler(), tm, rtn, clazz.getComponentType() != null ? clazz : null);

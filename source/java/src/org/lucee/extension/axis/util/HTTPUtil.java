@@ -1,12 +1,9 @@
 package org.lucee.extension.axis.util;
 
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-
 import lucee.loader.util.Util;
 
 public class HTTPUtil {
-	public static String getRootPath(ServletContext sc) {
+	public static String getRootPath(jakarta.servlet.ServletContext sc) {
 		if (sc == null) throw new RuntimeException("cannot determinate webcontext root, because the ServletContext is null");
 
 		String root = sc.getRealPath("/");
@@ -17,7 +14,7 @@ public class HTTPUtil {
 		return root;
 	}
 
-	public static String getRequestURL(HttpServletRequest req, boolean includeQueryString) {
+	public static String getRequestURL(jakarta.servlet.http.HttpServletRequest req, boolean includeQueryString) {
 
 		StringBuffer sb = req.getRequestURL();
 		int maxpos = sb.indexOf("/", 8);

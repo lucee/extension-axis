@@ -29,11 +29,6 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.WeakHashMap;
 
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpUtils;
 import javax.xml.namespace.QName;
 import javax.xml.soap.MimeHeader;
 import javax.xml.soap.MimeHeaders;
@@ -42,7 +37,6 @@ import javax.xml.soap.SOAPMessage;
 
 import org.apache.axis.AxisEngine;
 import org.apache.axis.AxisFault;
-import org.apache.axis.ConfigurationException;
 import org.apache.axis.Constants;
 import org.apache.axis.Handler;
 import org.apache.axis.Message;
@@ -52,8 +46,6 @@ import org.apache.axis.SimpleTargetedChain;
 import org.apache.axis.management.ServiceAdmin;
 import org.apache.axis.security.servlet.ServletSecurityProvider;
 import org.apache.axis.server.AxisServer;
-import org.apache.axis.transport.http.AxisHttpSession;
-import org.apache.axis.transport.http.FilterPrintWriter;
 import org.apache.axis.transport.http.HTTPConstants;
 import org.apache.axis.transport.http.QSWSDLHandler;
 import org.apache.axis.transport.http.ServletEndpointContextImpl;
@@ -65,6 +57,7 @@ import org.lucee.extension.axis.WSHandler;
 import org.lucee.extension.axis.WSServer;
 import org.lucee.extension.axis.log.LogImpl;
 import org.lucee.extension.axis.util.HTTPUtil;
+import org.lucee.extension.axis.util.JakartaUtil;
 import org.w3c.dom.Element;
 
 import lucee.commons.io.log.Log;
@@ -100,7 +93,7 @@ public final class Axis1Server implements WSServer {
 
 	private Handler transport;
 	private ServletSecurityProvider securityProvider = null;
-	private ServletContext context;
+	private jakarta.servlet.ServletContext jakContext;
 	private String webInfPath;
 	private String homeDir;
 	private AxisServer axisServer;
@@ -119,15 +112,15 @@ public final class Axis1Server implements WSServer {
 	 * 
 	 * @throws AxisFault
 	 */
-	private Axis1Server(Axis1Handler handler, PageContext pc, ServletContext context) throws AxisFault {
+	private Axis1Server(Axis1Handler handler, PageContext pc, jakarta.servlet.ServletContext context) throws AxisFault {
 		this.handler = handler;
-		this.context = context;
+		this.jakContext = context;
 
 		this.log = pc.getConfig().getLog("application");
 		this.exceptionLog = pc.getConfig().getLog("exception");
 
 		initQueryStringHandlers();
-		ServiceAdmin.setEngine(this.getEngine(), context.getServerInfo());
+		ServiceAdmin.setEngine(this.getEngine(null), context.getServerInfo());
 
 		webInfPath = context.getRealPath("/WEB-INF");
 		homeDir = HTTPUtil.getRootPath(context);
@@ -147,12 +140,13 @@ public final class Axis1Server implements WSServer {
 	}
 
 	@Override
-	public void doGet(PageContext pc, HttpServletRequest request, HttpServletResponse response, Component component) throws PageException {
-		PrintWriter writer = new FilterPrintWriter(response);
+	public void doGet(PageContext pc, jakarta.servlet.http.HttpServletRequest jakRequest, jakarta.servlet.http.HttpServletResponse jakResponse, Component component)
+			throws PageException {
 
 		try {
-			if (!doGet(request, response, writer, component)) {
-				response.setContentType("text/html; charset=utf-8");
+			PrintWriter writer = jakResponse.getWriter();
+			if (!doGet(jakRequest, jakResponse, writer, component)) {
+				jakResponse.setContentType("text/html; charset=utf-8");
 				writer.println("<html><h1>Lucee Webservice</h1>");
 				writer.println(Messages.getMessage("reachedServlet00"));
 				writer.println("<p>" + Messages.getMessage("transportName00", "<b>http</b>"));
@@ -215,7 +209,7 @@ public final class Axis1Server implements WSServer {
 	 */
 
 	@Override
-	public void doPost(PageContext pc, HttpServletRequest req, HttpServletResponse res, Component component) throws PageException {
+	public void doPost(PageContext pc, jakarta.servlet.http.HttpServletRequest req, jakarta.servlet.http.HttpServletResponse res, Component component) throws PageException {
 		ComponentController.set(pc, component);
 		try {
 			doPost(req, res, component);
@@ -228,7 +222,12 @@ public final class Axis1Server implements WSServer {
 		}
 	}
 
-	public void doPost(HttpServletRequest req, HttpServletResponse res, Component component) throws ServletException, IOException {
+	public void doPost(jakarta.servlet.http.HttpServletRequest jakRequest, jakarta.servlet.http.HttpServletResponse jakResponse, Component component)
+			throws jakarta.servlet.ServletException, IOException, PageException {
+
+		Object jaxRequest = JakartaUtil.toJavaxHttpServletRequest(jakRequest);
+		Object jaxResponse = JakartaUtil.toJavaxHttpServletResponse(jakResponse);
+
 		long t0 = 0, t1 = 0, t2 = 0, t3 = 0, t4 = 0;
 		String soapAction = null;
 		MessageContext msgContext = null;
@@ -237,21 +236,21 @@ public final class Axis1Server implements WSServer {
 		String contentType = null;
 		InputStream is = null;
 		try {
-			AxisEngine engine = getEngine();
+			AxisEngine engine = getEngine(jaxRequest);
 
 			if (engine == null) {
 				// !!! should return a SOAP fault...
-				ServletException se = new ServletException(Messages.getMessage("noEngine00"));
+				jakarta.servlet.ServletException se = new jakarta.servlet.ServletException(Messages.getMessage("noEngine00"));
 				log.error(APP, "No Engine!", se);
 				throw se;
 			}
 
-			res.setBufferSize(1024 * 8); // provide performance boost.
+			jakResponse.setBufferSize(1024 * 8); // provide performance boost.
 
 			/**
 			 * get message context w/ various properties set
 			 */
-			msgContext = createMessageContext(engine, req, res, component);
+			msgContext = createMessageContext(engine, jakRequest, jakResponse, jaxRequest, jaxResponse, component);
 			ComponentController.set(msgContext);
 
 			// ? OK to move this to 'getMessageContext',
@@ -263,13 +262,13 @@ public final class Axis1Server implements WSServer {
 				msgContext.setProperty(MessageContext.SECURITY_PROVIDER, securityProvider);
 			}
 
-			is = req.getInputStream();
-			Message requestMsg = new Message(is, false, req.getHeader(HTTPConstants.HEADER_CONTENT_TYPE), req.getHeader(HTTPConstants.HEADER_CONTENT_LOCATION));
+			is = jakRequest.getInputStream();
+			Message requestMsg = new Message(is, false, jakRequest.getHeader(HTTPConstants.HEADER_CONTENT_TYPE), jakRequest.getHeader(HTTPConstants.HEADER_CONTENT_LOCATION));
 			// Transfer HTTP headers to MIME headers for request message.
 			MimeHeaders requestMimeHeaders = requestMsg.getMimeHeaders();
-			for (Enumeration e = req.getHeaderNames(); e.hasMoreElements();) {
+			for (Enumeration e = jakRequest.getHeaderNames(); e.hasMoreElements();) {
 				String headerName = (String) e.nextElement();
-				for (Enumeration f = req.getHeaders(headerName); f.hasMoreElements();) {
+				for (Enumeration f = jakRequest.getHeaders(headerName); f.hasMoreElements();) {
 					String headerValue = (String) f.nextElement();
 					requestMimeHeaders.addHeader(headerName, headerValue);
 				}
@@ -282,7 +281,7 @@ public final class Axis1Server implements WSServer {
 				/**********************************************************/
 			}
 			msgContext.setRequestMessage(requestMsg);
-			String url = HttpUtils.getRequestURL(req).toString().toLowerCase();
+			String url = jakRequest.getRequestURL().toString().toLowerCase();
 			msgContext.setProperty(MessageContext.TRANS_URL, url);
 			// put character encoding of request to message context
 			// in order to reuse it during the whole process.
@@ -306,7 +305,7 @@ public final class Axis1Server implements WSServer {
 				 */
 				// (is this last stmt true??? (I don't think so - Glen))
 				/********************************************************/
-				soapAction = getSoapAction(req);
+				soapAction = getSoapAction(jakRequest);
 				if (soapAction != null) {
 					msgContext.setUseSOAPAction(true);
 					msgContext.setSOAPActionURI(soapAction);
@@ -315,7 +314,7 @@ public final class Axis1Server implements WSServer {
 				// Create a Session wrapper for the HTTP session.
 				// These can/should be pooled at some point.
 				// (Sam is Watching! :-)
-				msgContext.setSession(new AxisHttpSession(req));
+				msgContext.setSession(JakartaUtil.createAxisHttpSession(jaxRequest));
 
 				if (log.getLogLevel() >= Log.LEVEL_DEBUG) {
 					t1 = System.currentTimeMillis();
@@ -344,7 +343,7 @@ public final class Axis1Server implements WSServer {
 			catch (AxisFault fault) {
 				// log and sanitize
 				processAxisFault(fault);
-				configureResponseFromAxisFault(res, fault);
+				configureResponseFromAxisFault(jakResponse, fault);
 				responseMsg = msgContext.getResponseMessage();
 				if (responseMsg == null) {
 					responseMsg = new Message(fault);
@@ -361,7 +360,7 @@ public final class Axis1Server implements WSServer {
 					Exception e = (Exception) t;
 					// other exceptions are internal trouble
 					responseMsg = msgContext.getResponseMessage();
-					res.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+					jakResponse.setStatus(jakarta.servlet.http.HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
 					responseMsg = convertExceptionToAxisFault(e, responseMsg);
 					((org.apache.axis.SOAPPart) responseMsg.getSOAPPart()).getMessage().setMessageContext(msgContext);
 
@@ -372,7 +371,7 @@ public final class Axis1Server implements WSServer {
 					t.printStackTrace();
 					// other exceptions are internal trouble
 					responseMsg = msgContext.getResponseMessage();
-					res.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+					jakResponse.setStatus(jakarta.servlet.http.HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
 					responseMsg = new Message(new AxisFault(t.getMessage(), CFMLEngineFactory.getInstance().getCastUtil().toPageException(t)));
 					((org.apache.axis.SOAPPart) responseMsg.getSOAPPart()).getMessage().setMessageContext(msgContext);
 				}
@@ -381,7 +380,7 @@ public final class Axis1Server implements WSServer {
 		catch (AxisFault fault) {
 
 			processAxisFault(fault);
-			configureResponseFromAxisFault(res, fault);
+			configureResponseFromAxisFault(jakResponse, fault);
 			responseMsg = msgContext.getResponseMessage();
 			if (responseMsg == null) {
 				responseMsg = new Message(fault);
@@ -403,7 +402,7 @@ public final class Axis1Server implements WSServer {
 			MimeHeaders responseMimeHeaders = responseMsg.getMimeHeaders();
 			for (Iterator i = responseMimeHeaders.getAllHeaders(); i.hasNext();) {
 				MimeHeader responseMimeHeader = (MimeHeader) i.next();
-				res.addHeader(responseMimeHeader.getName(), responseMimeHeader.getValue());
+				jakResponse.addHeader(responseMimeHeader.getName(), responseMimeHeader.getValue());
 			}
 			// synchronize the character encoding of request and response
 			String responseEncoding = (String) msgContext.getProperty(SOAPMessage.CHARACTER_SET_ENCODING);
@@ -416,11 +415,11 @@ public final class Axis1Server implements WSServer {
 			}
 			// determine content type from message response
 			contentType = responseMsg.getContentType(msgContext.getSOAPConstants());
-			sendResponse(contentType, res, responseMsg);
+			sendResponse(contentType, jakResponse, responseMsg);
 		}
 		else {
 			// No content, so just indicate accepted
-			res.setStatus(202);
+			jakResponse.setStatus(202);
 		}
 
 		if (isDebug) {
@@ -440,12 +439,12 @@ public final class Axis1Server implements WSServer {
 	 * @param response response to configure
 	 * @param fault what went wrong
 	 */
-	private void configureResponseFromAxisFault(HttpServletResponse response, AxisFault fault) {
+	private void configureResponseFromAxisFault(jakarta.servlet.http.HttpServletResponse response, AxisFault fault) {
 		// then get the status code
 		// It's been suggested that a lack of SOAPAction
 		// should produce some other error code (in the 400s)...
 		int status = getHttpServletResponseStatus(fault);
-		if (status == HttpServletResponse.SC_UNAUTHORIZED) {
+		if (status == jakarta.servlet.http.HttpServletResponse.SC_UNAUTHORIZED) {
 			response.setHeader("WWW-Authenticate", "Basic realm=\"AXIS\"");
 		}
 		response.setStatus(status);
@@ -478,7 +477,8 @@ public final class Axis1Server implements WSServer {
 	 */
 	private int getHttpServletResponseStatus(AxisFault af) {
 		// subclasses... --Glen
-		return af.getFaultCode().getLocalPart().startsWith("Server.Unauth") ? HttpServletResponse.SC_UNAUTHORIZED : HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
+		return af.getFaultCode().getLocalPart().startsWith("Server.Unauth") ? jakarta.servlet.http.HttpServletResponse.SC_UNAUTHORIZED
+				: jakarta.servlet.http.HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
 		// This will raise a 401 for both
 		// "Unauthenticated" & "Unauthorized"...
 	}
@@ -491,9 +491,9 @@ public final class Axis1Server implements WSServer {
 	 * @throws AxisFault
 	 * @throws IOException if the response stream can not be written to
 	 */
-	private void sendResponse(String contentType, HttpServletResponse res, Message responseMsg) throws AxisFault, IOException {
+	private void sendResponse(String contentType, jakarta.servlet.http.HttpServletResponse res, Message responseMsg) throws AxisFault, IOException {
 		if (responseMsg == null) {
-			res.setStatus(HttpServletResponse.SC_NO_CONTENT);
+			res.setStatus(jakarta.servlet.http.HttpServletResponse.SC_NO_CONTENT);
 			if (isDebug) {
 				log.debug(APP, "NO AXIS MESSAGE TO RETURN!");
 			}
@@ -524,22 +524,24 @@ public final class Axis1Server implements WSServer {
 	 * we don't know how it's going to be used - perhaps it might not even need to be parsed.
 	 * 
 	 * @return a message context
+	 * @throws PageException
 	 */
-	private MessageContext createMessageContext(AxisEngine engine, HttpServletRequest req, HttpServletResponse res, Component component) {
+	private MessageContext createMessageContext(AxisEngine engine, jakarta.servlet.http.HttpServletRequest jakRequest, jakarta.servlet.http.HttpServletResponse jakResponse,
+			Object jaxRequest, Object jaxResponse, Component component) throws PageException {
 		MessageContext msgContext = new MessageContext(engine);
 
-		String requestPath = getRequestPath(req);
+		String requestPath = getRequestPath(jakRequest);
 
 		if (isDebug) {
 			log.debug(APP, "MessageContext:" + msgContext);
-			log.debug(APP, "HEADER_CONTENT_TYPE:" + req.getHeader(HTTPConstants.HEADER_CONTENT_TYPE));
-			log.debug(APP, "HEADER_CONTENT_LOCATION:" + req.getHeader(HTTPConstants.HEADER_CONTENT_LOCATION));
+			log.debug(APP, "HEADER_CONTENT_TYPE:" + jakRequest.getHeader(HTTPConstants.HEADER_CONTENT_TYPE));
+			log.debug(APP, "HEADER_CONTENT_LOCATION:" + jakRequest.getHeader(HTTPConstants.HEADER_CONTENT_LOCATION));
 			log.debug(APP, "Constants.MC_HOME_DIR:" + String.valueOf(homeDir));
 			log.debug(APP, "Constants.MC_RELATIVE_PATH:" + requestPath);
 			log.debug(APP, "HTTPConstants.MC_HTTP_SERVLETLOCATION:" + String.valueOf(webInfPath));
-			log.debug(APP, "HTTPConstants.MC_HTTP_SERVLETPATHINFO:" + req.getPathInfo());
-			log.debug(APP, "HTTPConstants.HEADER_AUTHORIZATION:" + req.getHeader(HTTPConstants.HEADER_AUTHORIZATION));
-			log.debug(APP, "Constants.MC_REMOTE_ADDR:" + req.getRemoteAddr());
+			log.debug(APP, "HTTPConstants.MC_HTTP_SERVLETPATHINFO:" + jakRequest.getPathInfo());
+			log.debug(APP, "HTTPConstants.HEADER_AUTHORIZATION:" + jakRequest.getHeader(HTTPConstants.HEADER_AUTHORIZATION));
+			log.debug(APP, "Constants.MC_REMOTE_ADDR:" + jakRequest.getRemoteAddr());
 			log.debug(APP, "configPath:" + String.valueOf(webInfPath));
 		}
 
@@ -550,16 +552,17 @@ public final class Axis1Server implements WSServer {
 		/* Save some HTTP specific info in the bag in case someone needs it */
 		/********************************************************************/
 		// msgContext.setProperty(Constants.MC_JWS_CLASSDIR, jwsClassDir);
+
 		msgContext.setProperty(Constants.MC_HOME_DIR, homeDir);
 		msgContext.setProperty(Constants.MC_RELATIVE_PATH, requestPath);
 		msgContext.setProperty(HTTPConstants.MC_HTTP_SERVLET, this);
-		msgContext.setProperty(HTTPConstants.MC_HTTP_SERVLETREQUEST, req);
-		msgContext.setProperty(HTTPConstants.MC_HTTP_SERVLETRESPONSE, res);
+		msgContext.setProperty(HTTPConstants.MC_HTTP_SERVLETREQUEST, jaxRequest);
+		msgContext.setProperty(HTTPConstants.MC_HTTP_SERVLETRESPONSE, jaxResponse);
 		msgContext.setProperty(HTTPConstants.MC_HTTP_SERVLETLOCATION, webInfPath);
-		msgContext.setProperty(HTTPConstants.MC_HTTP_SERVLETPATHINFO, req.getPathInfo());
-		msgContext.setProperty(HTTPConstants.HEADER_AUTHORIZATION, req.getHeader(HTTPConstants.HEADER_AUTHORIZATION));
+		msgContext.setProperty(HTTPConstants.MC_HTTP_SERVLETPATHINFO, jakRequest.getPathInfo());
+		msgContext.setProperty(HTTPConstants.HEADER_AUTHORIZATION, jakRequest.getHeader(HTTPConstants.HEADER_AUTHORIZATION));
 		msgContext.setProperty(org.lucee.extension.axis.server.Constants.COMPONENT, component);
-		msgContext.setProperty(Constants.MC_REMOTE_ADDR, req.getRemoteAddr());
+		msgContext.setProperty(Constants.MC_REMOTE_ADDR, jakRequest.getRemoteAddr());
 
 		// Set up a javax.xml.rpc.server.ServletEndpointContext
 		ServletEndpointContextImpl sec = new ServletEndpointContextImpl();
@@ -567,7 +570,7 @@ public final class Axis1Server implements WSServer {
 		msgContext.setProperty(Constants.MC_SERVLET_ENDPOINT_CONTEXT, sec);
 		/* Save the real path */
 		/**********************/
-		String realpath = context.getRealPath(requestPath);
+		String realpath = jakContext.getRealPath(requestPath);
 
 		if (realpath != null) {
 			msgContext.setProperty(Constants.MC_REALPATH, realpath);
@@ -586,10 +589,10 @@ public final class Axis1Server implements WSServer {
 	 * @return the action
 	 * @throws AxisFault
 	 */
-	private String getSoapAction(HttpServletRequest req) throws AxisFault {
-		String soapAction = req.getHeader(HTTPConstants.HEADER_SOAP_ACTION);
+	private String getSoapAction(jakarta.servlet.http.HttpServletRequest jakRequest) throws AxisFault {
+		String soapAction = jakRequest.getHeader(HTTPConstants.HEADER_SOAP_ACTION);
 		if (soapAction == null) {
-			String contentType = req.getHeader(HTTPConstants.HEADER_CONTENT_TYPE);
+			String contentType = jakRequest.getHeader(HTTPConstants.HEADER_CONTENT_TYPE);
 			if (contentType != null) {
 				int index = contentType.indexOf("action");
 				if (index != -1) {
@@ -623,7 +626,7 @@ public final class Axis1Server implements WSServer {
 		}
 
 		if (soapAction.length() == 0) {
-			soapAction = req.getContextPath(); // Is this right?
+			soapAction = jakRequest.getContextPath(); // Is this right?
 
 		}
 		return soapAction;
@@ -642,13 +645,15 @@ public final class Axis1Server implements WSServer {
 
 	}
 
-	private boolean doGet(HttpServletRequest request, HttpServletResponse response, PrintWriter writer, Component component)
-			throws SecurityException, NoSuchMethodException, IllegalArgumentException, IllegalAccessException, InvocationTargetException, IOException {
+	private boolean doGet(jakarta.servlet.http.HttpServletRequest jakRequest, jakarta.servlet.http.HttpServletResponse jakResponse, PrintWriter writer, Component component)
+			throws SecurityException, NoSuchMethodException, IllegalArgumentException, IllegalAccessException, InvocationTargetException, IOException, PageException {
+		Object jaxRequest = JakartaUtil.toJavaxHttpServletRequest(jakRequest);
+		Object jaxResponse = JakartaUtil.toJavaxHttpServletResponse(jakResponse);
 
-		String path = request.getServletPath();
-		String queryString = request.getQueryString();
+		String path = jakRequest.getServletPath();
+		String queryString = jakRequest.getQueryString();
 
-		AxisEngine engine = getEngine();
+		AxisEngine engine = getEngine(jaxRequest);
 
 		Iterator i = this.transport.getOptions().keySet().iterator();
 
@@ -656,8 +661,8 @@ public final class Axis1Server implements WSServer {
 			return false;
 		}
 
-		String servletURI = request.getContextPath() + path;
-		String reqURI = request.getRequestURI();
+		String servletURI = jakRequest.getContextPath() + path;
+		String reqURI = jakRequest.getRequestURI();
 
 		// service name
 		String serviceName;
@@ -710,8 +715,8 @@ public final class Axis1Server implements WSServer {
 					// Attempt to dynamically load the query string handler
 					// and its "invoke" method.
 
-					MessageContext msgContext = createMessageContext(engine, request, response, component);
-					msgContext.setProperty(MessageContext.TRANS_URL, HttpUtils.getRequestURL(request).toString().toLowerCase());
+					MessageContext msgContext = createMessageContext(engine, jakRequest, jakResponse, jaxRequest, jaxResponse, component);
+					msgContext.setProperty(MessageContext.TRANS_URL, jakRequest.getRequestURL().toString().toLowerCase());
 					// msgContext.setProperty(MessageContext.TRANS_URL,
 					// "http://DefaultNamespace");
 					msgContext.setProperty(HTTPConstants.PLUGIN_SERVICE_NAME, serviceName);
@@ -755,7 +760,7 @@ public final class Axis1Server implements WSServer {
 	 * @param request HttpServletRequest
 	 * @return String
 	 */
-	private static String getRequestPath(HttpServletRequest request) {
+	private static String getRequestPath(jakarta.servlet.http.HttpServletRequest request) {
 		return request.getServletPath() + ((request.getPathInfo() != null) ? request.getPathInfo() : "");
 	}
 
@@ -764,22 +769,24 @@ public final class Axis1Server implements WSServer {
 	 * 
 	 * @return
 	 * @throws AxisFault
+	 * @throws PageException
 	 */
-	public AxisServer getEngine() throws AxisFault {
+	public AxisServer getEngine(Object jaxRequest) throws AxisFault {
 		if (axisServer == null) {
-			synchronized (context) {
-				Map environment = new HashMap();
-				environment.put(AxisEngine.ENV_SERVLET_CONTEXT, context);
-				axisServer = AxisServer.getServer(environment);
-				axisServer.setName("LuceeServer");
-			}
-
-			// add Component Handler
 			try {
+				synchronized (jakContext) {
+					Map<String, Object> environment = new HashMap<>();
+					environment.put(AxisEngine.ENV_SERVLET_CONTEXT, JakartaUtil.toServletContext(jakContext, jaxRequest));
+					axisServer = AxisServer.getServer(environment);
+					axisServer.setName("LuceeServer");
+				}
+
+				// add Component Handler
+
 				SimpleChain sc = (SimpleChain) axisServer.getGlobalRequest();
 				sc.addHandler(new ComponentHandler());
 			}
-			catch (ConfigurationException e) {
+			catch (Exception e) {
 				throw AxisFault.makeFault(e);
 			}
 			TypeMappingUtil.registerDefaults(axisServer.getTypeMappingRegistry());
