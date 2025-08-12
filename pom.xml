@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.lucee</groupId>
     <artifactId>axis-extension</artifactId>
-    <version>1.5.0.0-SNAPSHOT
+    <version>1.5.0.1-SNAPSHOT
 </version>
     <packaging>pom</packaging>
     <name>Axis1 Extension</name>
