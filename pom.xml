@@ -13,7 +13,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
-        <id>18B7272E-D92B-433D-BE694F491216DED2</id>
+        <id>DF28D0A4-6748-44B9-A2FDC12E4E2E4D38</id>
         <bundlename>org.lucee.axis.extension</bundlename>
         <class>org.lucee.extension.axis.Axis1Handler</class>
         <luceeCoreVersion>7.0.0.110</luceeCoreVersion>
