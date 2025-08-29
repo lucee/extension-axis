@@ -74,6 +74,7 @@ jobs:
           name: axis-lex
           path: target/*.lex
   tests:
+    needs: build
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
