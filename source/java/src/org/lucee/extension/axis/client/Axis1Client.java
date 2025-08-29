@@ -19,6 +19,7 @@
 package org.lucee.extension.axis.client;
 
 import java.io.StringReader;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -388,6 +389,7 @@ public final class Axis1Client implements WSClient {
 			ret = invoke(call, inputs);
 		}
 		catch (AxisFault af) {
+			resolve(af);
 			boolean rethrow = true;
 			Throwable cause = af.getCause();
 			if (cause != null) {
@@ -418,7 +420,8 @@ public final class Axis1Client implements WSClient {
 					rethrow = false;
 
 				}
-				catch (Exception ee) {}
+				catch (Exception ee) {
+				}
 				// }
 			}
 			if (rethrow) throw af;
@@ -442,6 +445,42 @@ public final class Axis1Client implements WSClient {
 			}
 		}
 		return sct;
+	}
+
+	public static AxisFault resolve(AxisFault af) {
+		Throwable cause = af.getCause();
+		Throwable targetException = null;
+
+		while (cause instanceof InvocationTargetException) {
+			targetException = ((InvocationTargetException) cause).getTargetException();
+		}
+		if (targetException != null) {
+			af = createAxisFaultFromException(af, targetException);
+		}
+		return af;
+	}
+
+	private static AxisFault createAxisFaultFromException(AxisFault original, Throwable cause) {
+		QName faultCode = original.getFaultCode();
+		String faultString = cause.getMessage();
+		String faultActor = original.getFaultActor();
+
+		// Use original fault string if root cause message is empty
+		if (Util.isEmpty(faultString, true)) {
+			faultString = original.getFaultString();
+		}
+
+		// Create new AxisFault
+		AxisFault newFault = new AxisFault(faultCode, faultString, faultActor, null);
+		newFault.initCause(cause);
+
+		// Copy fault details
+		if (original.getFaultDetails() != null) {
+			for (Element detail: original.getFaultDetails()) {
+				newFault.addFaultDetail(detail);
+			}
+		}
+		return newFault;
 	}
 
 	private Object invoke(Call call, Object[] inputs) throws RemoteException {
@@ -588,7 +627,8 @@ public final class Axis1Client implements WSClient {
 			URL url = new URL(wsdlUrl);
 
 			// protocol
-			if ("http".equalsIgnoreCase(url.getProtocol())) {}
+			if ("http".equalsIgnoreCase(url.getProtocol())) {
+			}
 			else {
 				sb.append(toClassName(url.getProtocol(), false));
 				sb.append('.');
@@ -630,7 +670,8 @@ public final class Axis1Client implements WSClient {
 		try {
 			arr = _engine.getListUtil().toStringArray(_engine.getListUtil().toArray(raw, "./&="));
 		}
-		catch (PageException e) {}
+		catch (PageException e) {
+		}
 		String el;
 		for (int i = 0; i < arr.length; i++) {
 			el = arr[i].trim();

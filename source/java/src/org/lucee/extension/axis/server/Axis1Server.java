@@ -787,7 +787,7 @@ public final class Axis1Server implements WSServer {
 				sc.addHandler(new ComponentHandler());
 			}
 			catch (Exception e) {
-				throw AxisFault.makeFault(e);
+				throw AxisFault.makeFault(CFMLEngineFactory.getInstance().getCastUtil().toPageException(e));
 			}
 			TypeMappingUtil.registerDefaults(axisServer.getTypeMappingRegistry());
 		}
