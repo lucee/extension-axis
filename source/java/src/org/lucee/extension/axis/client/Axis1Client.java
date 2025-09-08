@@ -461,6 +461,8 @@ public final class Axis1Client implements WSClient {
 	}
 
 	private static AxisFault createAxisFaultFromException(AxisFault original, Throwable cause) {
+		cause = CFMLEngineFactory.getInstance().getCastUtil().toPageException(cause);
+
 		QName faultCode = original.getFaultCode();
 		String faultString = cause.getMessage();
 		String faultActor = original.getFaultActor();
