@@ -19,6 +19,7 @@
 package org.lucee.extension.axis.client;
 
 import java.io.StringReader;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -448,13 +449,12 @@ public final class Axis1Client implements WSClient {
 
 	public static AxisFault resolve(AxisFault af) {
 		Throwable cause = af.getCause();
-		Throwable targetException = null;
 
-		while (cause != null) {
-			targetException = CFMLEngineFactory.getInstance().getCastUtil().toPageException(cause);
+		while (cause instanceof InvocationTargetException) {
+			cause = ((InvocationTargetException) cause).getTargetException();
 		}
-		if (targetException != null) {
-			af = createAxisFaultFromException(af, targetException);
+		if (cause != null) {
+			af = createAxisFaultFromException(af, cause);
 		}
 		return af;
 	}
