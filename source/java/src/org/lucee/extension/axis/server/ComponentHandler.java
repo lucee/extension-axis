@@ -4,22 +4,21 @@
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either 
+ * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
- * 
- * You should have received a copy of the GNU Lesser General Public 
+ *
+ * You should have received a copy of the GNU Lesser General Public
  * License along with this library.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  **/
 package org.lucee.extension.axis.server;
 
-import java.util.Map;
-import java.util.WeakHashMap;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.axis.AxisFault;
 import org.apache.axis.MessageContext;
@@ -33,16 +32,23 @@ import org.lucee.extension.axis.util.RefBooleanImpl;
 import lucee.commons.lang.types.RefBoolean;
 import lucee.loader.engine.CFMLEngineFactory;
 import lucee.runtime.Component;
-import lucee.runtime.config.Config;
 
 /**
- * Handle Component as Webservice
+ * Handle Component as Webservice.
+ *
+ * Performance fix: caches the SOAPService and proxy class to avoid expensive
+ * getJavaAccessClass() reflection on every request. On cache hit, the proxy
+ * class is registered in the current AxisEngine's ClassCache so Axis can
+ * resolve it without the original request-scoped classloader. Per-key locking
+ * prevents thundering herd on cold start.
  */
 public final class ComponentHandler extends BasicHandler {
 
 	private static final long serialVersionUID = -3000170039354443399L;
 
-	private static Map<String, Pair> soapServices = new WeakHashMap<String, Pair>();
+	private static final ConcurrentHashMap<String, CachedService> serviceCache = new ConcurrentHashMap<String, CachedService>();
+
+	private static final ConcurrentHashMap<String, Object> lockMap = new ConcurrentHashMap<String, Object>();
 
 	@Override
 	public void invoke(MessageContext msgContext) throws AxisFault {
@@ -65,56 +71,80 @@ public final class ComponentHandler extends BasicHandler {
 	}
 
 	/**
-	 * handle all the work necessary set up the "proxy" RPC service surrounding it as the
-	 * MessageContext's active service.
+	 * Handle all the work necessary to set up the "proxy" RPC service surrounding
+	 * the component as the MessageContext's active service.
 	 *
+	 * On cache hit, skips the expensive getJavaAccessClass() entirely. The proxy
+	 * class is registered in the current AxisEngine's ClassCache so that Axis's
+	 * RPCProvider can find it without depending on the original classloader.
 	 */
 	protected void setupService(MessageContext msgContext) throws Exception {
-		RefBoolean isnew = new RefBooleanImpl(false);
 		Component cfc = (Component) msgContext.getProperty(Constants.COMPONENT);
-		Config c = CFMLEngineFactory.getInstance().getThreadConfig();
-		// ((ConfigImpl) ThreadLocalPageContext.getConfig(pc)).getWSHandler().getWSServer(pc).doGet(pc,
-		// pc.getHttpServletRequest(), pc.getHttpServletResponse(), component);
+		String cacheKey = cfc.getPageSource().getDisplayPath();
 
-		Class clazz = cfc.getJavaAccessClass(CFMLEngineFactory.getInstance().getThreadPageContext(), isnew, false, true, true, true);
-		String clazzName = clazz.getName();
-
-		ClassLoader classLoader = clazz.getClassLoader();
-		Pair pair;
-		SOAPService rpc = null;
-		if (!isnew.toBooleanValue() && (pair = soapServices.get(clazzName)) != null) {
-			if (classLoader == pair.classloader) rpc = pair.rpc;
+		// 1. Check cache FIRST -- skip all reflection on cache hit
+		CachedService cached = serviceCache.get(cacheKey);
+		if (cached != null) {
+			msgContext.getAxisEngine().getClassCache().registerClass(cached.className, cached.clazz);
+			msgContext.setClassLoader(cached.classLoader);
+			cached.rpc.setEngine(msgContext.getAxisEngine());
+			msgContext.setService(cached.rpc);
+			return;
 		}
-		// else classLoader = clazz.getClassLoader();
 
-		// print.out("cl:"+classLoader);
-		msgContext.setClassLoader(classLoader);
+		// 2. Cache miss -- synchronize per component to prevent thundering herd
+		synchronized (getLock(cacheKey)) {
+			// Double-check after acquiring lock
+			cached = serviceCache.get(cacheKey);
+			if (cached != null) {
+				msgContext.getAxisEngine().getClassCache().registerClass(cached.className, cached.clazz);
+				msgContext.setClassLoader(cached.classLoader);
+				cached.rpc.setEngine(msgContext.getAxisEngine());
+				msgContext.setService(cached.rpc);
+				return;
+			}
 
-		if (rpc == null) {
-			rpc = new SOAPService(new RPCProvider());
+			// Do the expensive reflection (only one thread per component pays this cost)
+			RefBoolean isnew = new RefBooleanImpl(false);
+			Class clazz = cfc.getJavaAccessClass(
+					CFMLEngineFactory.getInstance().getThreadPageContext(),
+					isnew, false, true, true, true);
+			String clazzName = clazz.getName();
+			ClassLoader classLoader = clazz.getClassLoader();
+
+			// Set classloader BEFORE getInitializedServiceDesc - it uses
+			// msgContext.getClassLoader() to resolve the proxy class
+			msgContext.setClassLoader(classLoader);
+
+			SOAPService rpc = new SOAPService(new RPCProvider());
 			rpc.setName(clazzName);
 			rpc.setOption(JavaProvider.OPTION_CLASSNAME, clazzName);
 			rpc.setEngine(msgContext.getAxisEngine());
-
 			rpc.setOption(JavaProvider.OPTION_ALLOWEDMETHODS, "*");
 			rpc.setOption(JavaProvider.OPTION_SCOPE, Scope.REQUEST.getName());
 			rpc.getInitializedServiceDesc(msgContext);
-			soapServices.put(clazzName, new Pair(classLoader, rpc));
+
+			serviceCache.put(cacheKey, new CachedService(classLoader, rpc, clazz, clazzName));
+
+			msgContext.setService(rpc);
 		}
-
-		rpc.setEngine(msgContext.getAxisEngine());
-		rpc.init(); // ??
-		msgContext.setService(rpc);
-
 	}
 
-	class Pair {
-		private ClassLoader classloader;
-		private SOAPService rpc;
+	private static Object getLock(String key) {
+		return lockMap.computeIfAbsent(key, k -> new Object());
+	}
 
-		public Pair(ClassLoader classloader, SOAPService rpc) {
-			this.classloader = classloader;
+	static class CachedService {
+		final ClassLoader classLoader;
+		final SOAPService rpc;
+		final Class clazz;
+		final String className;
+
+		CachedService(ClassLoader classLoader, SOAPService rpc, Class clazz, String className) {
+			this.classLoader = classLoader;
 			this.rpc = rpc;
+			this.clazz = clazz;
+			this.className = className;
 		}
 	}
 }

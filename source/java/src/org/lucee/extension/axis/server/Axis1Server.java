@@ -27,7 +27,7 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.WeakHashMap;
+import java.util.concurrent.ConcurrentHashMap;
 
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
@@ -110,7 +110,7 @@ public final class Axis1Server implements WSServer {
 
 	private static boolean isDevelopment = false;
 	private static boolean isDebug = false;
-	private static Map<String, Axis1Server> servers = new WeakHashMap<String, Axis1Server>();
+	private static final ConcurrentHashMap<String, Axis1Server> servers = new ConcurrentHashMap<String, Axis1Server>();
 
 	/**
 	 * Initialization method.
@@ -134,10 +134,13 @@ public final class Axis1Server implements WSServer {
 	}
 
 	public static Axis1Server getInstance(Axis1Handler handler, PageContext pc) throws AxisFault {
-		int id = pc.getId();
-		Axis1Server server = servers.get(caster.toString(id));
+		String key = caster.toString(pc.getId());
+		Axis1Server server = servers.get(key);
 		if (server == null) {
-			servers.put(caster.toString(id), server = new Axis1Server(handler, pc, pc.getServletContext()));
+			// Use putIfAbsent to avoid holding the map lock during construction
+			Axis1Server newServer = new Axis1Server(handler, pc, pc.getServletContext());
+			Axis1Server existing = servers.putIfAbsent(key, newServer);
+			server = (existing != null) ? existing : newServer;
 		}
 		return server;
 	}
@@ -193,6 +196,7 @@ public final class Axis1Server implements WSServer {
 		// strip out the stack trace
 		fault.removeFaultDetail(Constants.QNAME_FAULTDETAIL_STACKTRACE);
 		// }
+		fault.removeFaultDetail(Constants.QNAME_FAULTDETAIL_HOSTNAME);
 	}
 
 	/**
