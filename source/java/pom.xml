@@ -1,0 +1,189 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>org.lucee</groupId>
+    <artifactId>axis-extension-tests</artifactId>
+    <version>1.4.1-SNAPSHOT</version>
+    <packaging>jar</packaging>
+    <name>Axis Extension - Test Harness</name>
+    <description>Maven build for running unit tests against the Axis extension source</description>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
+        <junit.version>5.10.2</junit.version>
+        <mockito.version>5.11.0</mockito.version>
+    </properties>
+
+    <dependencies>
+        <!-- Lucee loader (provides Component, CFMLEngineFactory, PageContext, etc.) -->
+        <dependency>
+            <groupId>lucee</groupId>
+            <artifactId>lucee-loader</artifactId>
+            <version>1.0</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/libs/lucee.jar</systemPath>
+        </dependency>
+
+        <!-- Apache Axis -->
+        <dependency>
+            <groupId>org.lucee</groupId>
+            <artifactId>axis</artifactId>
+            <version>1.4.0.0006L</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/libs/org.lucee.axis-1.4.0.0006L.jar</systemPath>
+        </dependency>
+
+        <!-- Axis Ant -->
+        <dependency>
+            <groupId>org.lucee</groupId>
+            <artifactId>axis-ant</artifactId>
+            <version>1.4.0.0006L</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/libs/org.lucee.axis.ant-1.4.0.0006L.jar</systemPath>
+        </dependency>
+
+        <!-- JAX-RPC -->
+        <dependency>
+            <groupId>org.lucee</groupId>
+            <artifactId>jaxrpc</artifactId>
+            <version>1.4.0</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/libs/org.lucee.jaxrpc-1.4.0.jar</systemPath>
+        </dependency>
+
+        <!-- SAAJ -->
+        <dependency>
+            <groupId>org.lucee</groupId>
+            <artifactId>saaj</artifactId>
+            <version>1.4.0</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/libs/org.lucee.saaj-1.4.0.jar</systemPath>
+        </dependency>
+
+        <!-- WSDL4J -->
+        <dependency>
+            <groupId>org.lucee</groupId>
+            <artifactId>wsdl4j</artifactId>
+            <version>1.5.1.00002L</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/libs/org.lucee.wsdl4j-1.5.1.00002L.jar</systemPath>
+        </dependency>
+
+        <!-- Commons Discovery -->
+        <dependency>
+            <groupId>commons-discovery</groupId>
+            <artifactId>commons-discovery</artifactId>
+            <version>0.5</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/libs/org.apache.commons.discovery-0.5.jar</systemPath>
+        </dependency>
+
+        <!-- Commons Net -->
+        <dependency>
+            <groupId>commons-net</groupId>
+            <artifactId>commons-net</artifactId>
+            <version>3.3.0</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/libs/org.apache.commons.net-3.3.0.jar</systemPath>
+        </dependency>
+
+        <!-- Commons HttpClient -->
+        <dependency>
+            <groupId>commons-httpclient</groupId>
+            <artifactId>commons-httpclient</artifactId>
+            <version>3.1.0.0002L</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/libs/org.lucee.commons.httpclient-3.1.0.0002L.jar</systemPath>
+        </dependency>
+
+        <!-- Commons Logging -->
+        <dependency>
+            <groupId>commons-logging</groupId>
+            <artifactId>commons-logging</artifactId>
+            <version>1.2.0.0000L</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/libs/org.lucee.commons.logging-1.2.0.0000L.jar</systemPath>
+        </dependency>
+
+        <!-- Javax Servlet -->
+        <dependency>
+            <groupId>javax.servlet</groupId>
+            <artifactId>javax.servlet-api</artifactId>
+            <version>3.0.1</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/libs/javax.servlet.jar</systemPath>
+        </dependency>
+
+        <!-- Test dependencies -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <version>${mockito.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-junit-jupiter</artifactId>
+            <version>${mockito.version}</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <sourceDirectory>src</sourceDirectory>
+        <testSourceDirectory>test</testSourceDirectory>
+        <resources>
+            <resource>
+                <directory>src</directory>
+                <excludes>
+                    <exclude>**/*.java</exclude>
+                </excludes>
+            </resource>
+        </resources>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.11.0</version>
+                <configuration>
+                    <source>1.8</source>
+                    <target>1.8</target>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.2.5</version>
+                <configuration>
+                    <additionalClasspathElements>
+                        <additionalClasspathElement>${project.basedir}/libs/lucee.jar</additionalClasspathElement>
+                        <additionalClasspathElement>${project.basedir}/libs/org.lucee.axis-1.4.0.0006L.jar</additionalClasspathElement>
+                        <additionalClasspathElement>${project.basedir}/libs/org.lucee.axis.ant-1.4.0.0006L.jar</additionalClasspathElement>
+                        <additionalClasspathElement>${project.basedir}/libs/org.lucee.jaxrpc-1.4.0.jar</additionalClasspathElement>
+                        <additionalClasspathElement>${project.basedir}/libs/org.lucee.saaj-1.4.0.jar</additionalClasspathElement>
+                        <additionalClasspathElement>${project.basedir}/libs/org.lucee.wsdl4j-1.5.1.00002L.jar</additionalClasspathElement>
+                        <additionalClasspathElement>${project.basedir}/libs/org.apache.commons.discovery-0.5.jar</additionalClasspathElement>
+                        <additionalClasspathElement>${project.basedir}/libs/org.apache.commons.net-3.3.0.jar</additionalClasspathElement>
+                        <additionalClasspathElement>${project.basedir}/libs/org.lucee.commons.httpclient-3.1.0.0002L.jar</additionalClasspathElement>
+                        <additionalClasspathElement>${project.basedir}/libs/org.lucee.commons.logging-1.2.0.0000L.jar</additionalClasspathElement>
+                        <additionalClasspathElement>${project.basedir}/libs/javax.servlet.jar</additionalClasspathElement>
+                    </additionalClasspathElements>
+                    <!-- Allow Mockito to open internal JDK modules for reflection -->
+                    <argLine>
+                        --add-opens java.base/java.lang=ALL-UNNAMED
+                        --add-opens java.base/java.lang.reflect=ALL-UNNAMED
+                    </argLine>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>
